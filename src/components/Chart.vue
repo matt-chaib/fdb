@@ -80,9 +80,16 @@
   </template>
   
   <script setup lang="ts">
-  import { computed, ref } from "vue";
+  import { computed, ref, watch} from "vue";
   const hoveredPoint = ref<number | null>(null); // Stores the index of the hovered point
+
+  import { usePointsStore } from '@/stores/points'; // Import the store
+
+  const pointsStore = usePointsStore(); // Get the store instance
+
+  console.log("points", pointsStore.points)
   console.log(hoveredPoint)
+  
   // Define types for data points
   interface DataPoint {
     x: number;
@@ -122,51 +129,60 @@ function handleMouseLeave() {
 // Sample data points
 const data = ref<DataPoint[]>([]);
 
-// Initialize data with x values from 0 to 11
-let i: number = 0;
-for (i; i < 12; i++) {
-  data.value.push({ x: i, y: 0 });
-}
-
 // Define earnings ref, if needed later
 const earnings = ref<DataPoint[]>([]);
 
-// Declare the ref with the correct type
-const incomeLevel = ref<IncomeVariable[]>([
-  { x: 2, amount: 200 },
-  { x: 7, amount: 250 },
-]);
+const incomeLevel = computed(() => {
+  return pointsStore.points.map(point => ({
+    x: point.x,
+    amount: point.value
+  }));
+});
+
 
 const spendingLevel = ref<IncomeVariable[]>([
-  { x: 4, amount: -150 },
+  { x: 4, amount: -10 },
 ]);
 
-// Declare variables for income and savings
-let savings: number = 0;
-let currentIncome: number = 0;
-let currentSpending: number = 0;
-let income: number = 0;
+// Watch for changes in pointsStore to update the graph
+watch(() => pointsStore.points, () => {
+  console.log("updating")
+  updateData();
+}, { deep: true });
 
-// Iterate over the data array to update the y values with savings
-data.value = data.value.map((row) => {
-  // Find the income for the current x, default to 0 if not found
-  const incomeEntry = incomeLevel.value.find((level) => level.x === row.x);
-  const spendingEntry = spendingLevel.value.find((level) => level.x === row.x);
-  if (incomeEntry) {
-    currentIncome = incomeEntry.amount;
+// Function to update the data array based on points
+function updateData() {
+  let savings: number = 0;
+  let currentIncome: number = 0;
+  let currentSpending: number = 0;
+  let income: number = 0;
+
+  // Update the data array with new values
+  data.value = data.value.map((row) => {
+    const incomeEntry = incomeLevel.value.find((level) => level.x === row.x);
+    const spendingEntry = spendingLevel.value.find((level) => level.x === row.x);
+    
+    if (incomeEntry) currentIncome = incomeEntry.amount;
+    if (spendingEntry) currentSpending = spendingEntry.amount;
+
+    income = currentIncome + currentSpending;
+
+    // Update savings and return updated point
+    savings += income;
+    return { x: row.x, y: savings };
+  });
+  console.log(data.value);
+}
+
+// Sample data points (initialize if no data)
+if (data.value.length === 0) {
+  let i: number = 0;
+  for (i; i < 12; i++) {
+    data.value.push({ x: i, y: 0 });
   }
-  if (spendingEntry) {
-    currentSpending = spendingEntry.amount;
-  }
+}
 
-  income = currentIncome + currentSpending
-
-  // Add the income to savings
-  savings += income;
-
-  // Return the updated object with x and y values
-  return { x: row.x, y: savings };
-});
+console.log(data)
 
 console.log(data.value);
 
@@ -189,7 +205,7 @@ const generateTicks = (maxY: number, interval: number): number[] => {
   
   // Compute X and Y ticks
   const xTicks = computed<number[]>(() => data.value.map((d) => d.x));
-  const yTicks = computed<number[]>(() => generateTicks(Math.max(...data.value.map((d) => d.y)), 100));
+  const yTicks = computed<number[]>(() => generateTicks(Math.max(...data.value.map((d) => d.y)),10));
   
   // Create scaling functions
   const scaleX = computed<((x: number) => number)>(() => {
