@@ -1,11 +1,14 @@
 <script setup lang="ts">
-import { usePointsStore } from '@/stores/points'; // Import the store
+import { onMounted, computed } from 'vue';
+import { sliderColors } from '@/utils/colours';
 
-const pointsStore = usePointsStore(); // Get the store instance
+import { defineProps } from 'vue';
 
-const addPoint = () => {
-  pointsStore.addPoint(); // Add a new point through the store
-};
+import type { PointStore } from '@/stores/pointStore';
+
+let {pointsStore} = defineProps<{
+  pointsStore: PointStore;
+}>();
 
 // Start dragging the point
 const startDrag = (index: number, event: MouseEvent) => {
@@ -16,9 +19,9 @@ const startDrag = (index: number, event: MouseEvent) => {
   const onMouseMove = (moveEvent: MouseEvent) => {
     if (isDragging) {
       const deltaX = moveEvent.clientX - startX;
-      let newX = startPointX + (deltaX * 12) / 600; // Max value 12, chart width 600
+      let newX = startPointX + (deltaX * 100) / 600; // Max value 12, chart width 600
       newX = Math.round(newX); // Snap to the nearest whole number
-      pointsStore.updatePoint(index, { x: Math.min(Math.max(0, newX), 12), value: pointsStore.points[index].value });
+      pointsStore.updatePoint(index, { x: Math.min(Math.max(0, newX), 100), value: pointsStore.points[index].value, recurring: pointsStore.points[index].recurring});
     }
   };
 
@@ -31,12 +34,43 @@ const startDrag = (index: number, event: MouseEvent) => {
   window.addEventListener('mousemove', onMouseMove);
   window.addEventListener('mouseup', onMouseUp);
 };
+  let padding = 50
+  let chartWidth = 600
+  // Create scaling functions
+  const scaleX = computed<((x: number) => number)>(() => {
+    const minX = 0;
+    const maxX = 100;
+    return (x: number) =>
+      padding + ((x - minX) / (maxX - minX)) * (chartWidth - 2 * padding);
+  });
+
 </script>
 
 <template>
   <div>
+      <!-- Display and edit point values -->
+      <div v-for="(point, index) in pointsStore.points" :key="'input-' + index" style="margin-top: 10px;">
+      <label>
+        Point {{ index + 1 }}:
+        X = {{ point.x }},
+        Recurring = {{ point.recurring }}
+        Value: 
+        <input
+          type="number"
+          v-model.number="point.value"
+          :min="0"
+          style="width: 60px;"
+        />
+
+        <input
+          type="boolean"
+          v-model.number="point.recurring"
+          style="width: 60px;"
+        />
+      </label>
+    </div>
     <!-- Button to add a point -->
-    <button @click="addPoint">Add Point</button>
+    <button @click="pointsStore.addPoint">Add Point</button>
     
     <!-- Render each point -->
     <div class="line" :style="{ width: '600px', height: '10px', background: '#ddd', position: 'relative' }">
@@ -45,31 +79,32 @@ const startDrag = (index: number, event: MouseEvent) => {
         :key="index"
         class="point"
         :style="{
-          left: `${point.x * (600 / 12)}px`,
+          left: `${scaleX(point.x) - 123}px`,
+          bottom: '-5px',
           position: 'absolute',
           cursor: 'pointer',
-          width: '20px',
-          height: '20px',
-          backgroundColor: 'red',
+          width: `${point.recurring ? '20px' : '10px'}`,
+          height: `${point.recurring ? '20px' : '10px'}`,
+          backgroundColor: sliderColors[index],
           borderRadius: '50%',
         }"
         @mousedown="startDrag(index, $event)"
       ></div>
-    </div>
-
-    <!-- Display and edit point values -->
-    <div v-for="(point, index) in pointsStore.points" :key="'input-' + index" style="margin-top: 10px;">
-      <label>
-        Point {{ index + 1 }}:
-        X = {{ point.x }},
-        Value: 
-        <input
-          type="number"
-          v-model.number="point.value"
-          :min="0"
-          style="width: 60px;"
-        />
-      </label>
+      <div
+        v-for="(point, index) in pointsStore.points"
+        :key="index"
+        class="line"
+        :style="{
+          left: `${scaleX(point.x) - 128}px`,
+          bottom: '-470px',
+          position: 'absolute',
+          cursor: 'pointer',
+          width: '2px',
+          height: '450px',
+          backgroundColor: sliderColors[index],
+        }"
+        @mousedown="startDrag(index, $event)"
+      ></div>
     </div>
   </div>
 </template>
@@ -79,11 +114,13 @@ const startDrag = (index: number, event: MouseEvent) => {
   background-color: #ddd;
   height: 10px;
   margin: 20px 0;
+  margin-left: 85px;
 }
 
 .point {
   width: 20px;
   height: 20px;
+  margin-left: 70px;
   background-color: red;
   border-radius: 50%;
   cursor: pointer;

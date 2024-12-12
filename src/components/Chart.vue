@@ -83,11 +83,17 @@
   import { computed, ref, watch} from "vue";
   const hoveredPoint = ref<number | null>(null); // Stores the index of the hovered point
 
-  import { usePointsStore } from '@/stores/points'; // Import the store
+  import { defineProps } from 'vue';
 
-  const pointsStore = usePointsStore(); // Get the store instance
+    import type { PointStore } from '@/stores/pointStore';
 
-  console.log("points", pointsStore.points)
+    let {incomeStore, expenseStore} = defineProps<{
+      incomeStore: PointStore;
+      expenseStore: PointStore;
+    }>();
+
+
+  console.log("points", incomeStore.points)
   console.log(hoveredPoint)
   
   // Define types for data points
@@ -109,12 +115,11 @@
 }
 
 function isHoveredFill(index: number) {
-    console.log("isHoevered", index, hoveredPoint.value)
     return(index === hoveredPoint.value ? 'red' : 'blue')
 }
 
 function isHoveredRadius(index: number) {
-   return(index === hoveredPoint.value ? 10 : 7)
+   return(index === hoveredPoint.value ? (maxX * 7 / (maxX - minX)) : (maxX * 4 / (maxX - minX)))
 }
 
 function handleMouseLeave() {
@@ -133,19 +138,29 @@ const data = ref<DataPoint[]>([]);
 const earnings = ref<DataPoint[]>([]);
 
 const incomeLevel = computed(() => {
-  return pointsStore.points.map(point => ({
+  return incomeStore.points.map(point => ({
     x: point.x,
-    amount: point.value
+    amount: point.value,
+    recurring: point.recurring
   }));
 });
 
 
-const spendingLevel = ref<IncomeVariable[]>([
-  { x: 4, amount: -10 },
-]);
+const spendingLevel= computed(() => {
+  return expenseStore.points.map(point => ({
+    x: point.x,
+    amount: point.value,
+    recurring: point.recurring
+  }));
+});
 
-// Watch for changes in pointsStore to update the graph
-watch(() => pointsStore.points, () => {
+// Watch for changes in incomeStore to update the graph
+watch(() => incomeStore.points, () => {
+  console.log("updating")
+  updateData();
+}, { deep: true });
+
+watch(() => expenseStore.points, () => {
   console.log("updating")
   updateData();
 }, { deep: true });
@@ -162,30 +177,30 @@ function updateData() {
     const incomeEntry = incomeLevel.value.find((level) => level.x === row.x);
     const spendingEntry = spendingLevel.value.find((level) => level.x === row.x);
     
-    if (incomeEntry) currentIncome = incomeEntry.amount;
-    if (spendingEntry) currentSpending = spendingEntry.amount;
+    if (incomeEntry) currentIncome = incomeEntry.recurring ? incomeEntry.amount : currentIncome;
+    if (spendingEntry) currentSpending = spendingEntry.recurring ? -spendingEntry.amount : currentSpending;
 
     income = currentIncome + currentSpending;
 
     // Update savings and return updated point
     savings += income;
+    if (incomeEntry && !incomeEntry.recurring) savings += incomeEntry.amount;
+    if (spendingEntry && !spendingEntry.recurring) savings -= spendingEntry.amount;
     return { x: row.x, y: savings };
   });
-  console.log(data.value);
 }
 
 // Sample data points (initialize if no data)
 if (data.value.length === 0) {
   let i: number = 0;
-  for (i; i < 12; i++) {
+  for (i; i < 100; i++) {
     data.value.push({ x: i, y: 0 });
   }
 }
 
-console.log(data)
-
 console.log(data.value);
 
+updateData()
 
 // Function to generate ticks based on the maximum y value and the interval
 const generateTicks = (maxY: number, interval: number): number[] => {
@@ -204,20 +219,23 @@ const generateTicks = (maxY: number, interval: number): number[] => {
 
   
   // Compute X and Y ticks
-  const xTicks = computed<number[]>(() => data.value.map((d) => d.x));
-  const yTicks = computed<number[]>(() => generateTicks(Math.max(...data.value.map((d) => d.y)),10));
+  const xTicks: number[] = Array.from({ length: 101 }, (_, i) => i);
+  const yTicks = computed<number[]>(() => generateTicks(5000,500));
   
+
+  const minX: number = 0;
+  const maxX: number = 100;
+
   // Create scaling functions
   const scaleX = computed<((x: number) => number)>(() => {
-    const minX = Math.min(...data.value.map((d) => d.x));
-    const maxX = Math.max(...data.value.map((d) => d.x));
+    console.log(minX, maxX)
     return (x: number) =>
       padding + ((x - minX) / (maxX - minX)) * (chartWidth - 2 * padding);
   });
   
   const scaleY = computed<((y: number) => number)>(() => {
     const minY = 0;
-    const maxY = Math.max(...data.value.map((d) => d.y));
+    const maxY = 3000; // Math.max(...data.value.map((d) => d.y));
     return (y: number) =>
       chartHeight -
       padding -
