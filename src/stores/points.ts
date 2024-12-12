@@ -1,25 +1,22 @@
 import { defineStore } from 'pinia';
 import type { Point } from '@/types/Point';
 
-export const useIncomeStore = defineStore('incomes', {
+export const usePointsStore = defineStore('points', {
   state: () => ({
-    incomes: [{x: 4, value: 50, recurring: true}] as Point[], // The array to store incomes
+    points: [{x: 4, value: 50, recurring: true, type: "income"}, {x: 7, value: 20, recurring: true, type: "expense"}] as Point[], // The array to store incomes
   }),
-  getters: {
-    points: (state) => state.incomes, // Alias for points
-  },
   actions: {
     addPoint() {
       // Add a new point to the array
-      this.incomes.push({ x: 0, value: 0, recurring: false });
+      this.points.push({ x: 0, value: 0, recurring: false, type: "income" });
     },
     updatePoint(index: number, newPoint: Point) {
       // Update the point at the given index
-      this.incomes[index] = newPoint;
+      this.points[index] = newPoint;
     },
     removePoint(index: number) {
       // Remove the point at the given index
-      this.incomes.splice(index, 1);
+      this.points.splice(index, 1);
     },
   },
 });

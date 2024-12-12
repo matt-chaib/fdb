@@ -37,7 +37,7 @@
             text-anchor="middle"
             font-size="12"
           >
-            {{ tick }}
+            {{ tick/120 * 10 + ' years' }}
           </text>
         </g>
         <!-- Y Axis Ticks -->
@@ -55,7 +55,7 @@
             text-anchor="end"
             font-size="12"
           >
-            {{ tick }}
+            {{ tick/1000 + 'k' }}
           </text>
         </g>
         <polyline
@@ -66,7 +66,7 @@
         />
         <!-- Data Points -->
         <circle
-        v-for="(point, i) in data"
+        v-for="(point, i) in totalAssets"
   :key="'point-' + i"
   :cx="scaleX(point.x)"
   :cy="scaleY(point.y)"
@@ -74,8 +74,37 @@
   :fill="isHoveredFill(i)" 
   @mouseenter="handleMouseEnter(i)"
   @mouseleave="handleMouseLeave"
-        />      
+        />
+        <circle
+        v-for="(point, i) in savings"
+  :key="'point-' + i"
+  :cx="scaleX(point.x)"
+  :cy="scaleY(point.y)"
+  :r="'3px'" 
+  :fill="'blue'" 
+        />     
       </svg>
+    </div>
+    <div>
+      SavingsPercent
+      <input
+          type="number"
+          v-model.number="savingsPercent"
+          :min="0"
+          style="width: 60px;"
+        />
+        Xmin
+        <input
+          type="number"
+          v-model.number="minX"
+          style="width: 60px;"
+        />
+        xMax
+        <input
+          type="number"
+          v-model.number="maxX"
+          style="width: 60px;"
+        />
     </div>
   </template>
   
@@ -87,13 +116,16 @@
 
     import type { PointStore } from '@/stores/pointStore';
 
-    let {incomeStore, expenseStore} = defineProps<{
-      incomeStore: PointStore;
-      expenseStore: PointStore;
+    let {pointStore} = defineProps<{
+      pointStore: PointStore;
     }>();
 
+    let savingsPercent = ref<number>(0.2);
 
-  console.log("points", incomeStore.points)
+    let minX = ref<number>(0);
+    let maxX = ref<number>(1000);
+
+
   console.log(hoveredPoint)
   
   // Define types for data points
@@ -102,15 +134,8 @@
     y: number;
   }
 
-    // Define types for data points
-    interface IncomeVariable {
-    x: number;
-    amount: number;
-  }
-
-
   function handleMouseEnter(index: number) {
-    console.log(index, hoveredPoint.value)
+    console.log(index, totalAssets.value[index].y)
   hoveredPoint.value = index;
 }
 
@@ -119,7 +144,7 @@ function isHoveredFill(index: number) {
 }
 
 function isHoveredRadius(index: number) {
-   return(index === hoveredPoint.value ? (maxX * 7 / (maxX - minX)) : (maxX * 4 / (maxX - minX)))
+   return(index === hoveredPoint.value ? 5 : 3)
 }
 
 function handleMouseLeave() {
@@ -132,73 +157,72 @@ function handleMouseLeave() {
   const padding = 50;
   
 // Sample data points
-const data = ref<DataPoint[]>([]);
+const totalAssets = ref<DataPoint[]>([]);
 
-// Define earnings ref, if needed later
-const earnings = ref<DataPoint[]>([]);
+const savings = ref<DataPoint[]>([]);
 
 const incomeLevel = computed(() => {
-  return incomeStore.points.map(point => ({
+  return pointStore.points.map(point => ({
     x: point.x,
     amount: point.value,
-    recurring: point.recurring
+    recurring: point.recurring,
+    type: point.type
   }));
 });
 
-
-const spendingLevel= computed(() => {
-  return expenseStore.points.map(point => ({
-    x: point.x,
-    amount: point.value,
-    recurring: point.recurring
-  }));
-});
-
-// Watch for changes in incomeStore to update the graph
-watch(() => incomeStore.points, () => {
+// Watch for changes in pointStore to update the graph
+watch(() => pointStore.points, () => {
   console.log("updating")
   updateData();
 }, { deep: true });
 
-watch(() => expenseStore.points, () => {
+watch(() => savingsPercent, () => {
   console.log("updating")
   updateData();
 }, { deep: true });
 
 // Function to update the data array based on points
 function updateData() {
-  let savings: number = 0;
+  let assets: number = 0;
   let currentIncome: number = 0;
   let currentSpending: number = 0;
   let income: number = 0;
+  let currentSaving: number = 0;
+  let savingsInterest: number = 0;
+  let savingsInterestPercent: number = 0.001;
 
   // Update the data array with new values
-  data.value = data.value.map((row) => {
+  totalAssets.value = totalAssets.value.map((row, index) => {
     const incomeEntry = incomeLevel.value.find((level) => level.x === row.x);
-    const spendingEntry = spendingLevel.value.find((level) => level.x === row.x);
-    
-    if (incomeEntry) currentIncome = incomeEntry.recurring ? incomeEntry.amount : currentIncome;
-    if (spendingEntry) currentSpending = spendingEntry.recurring ? -spendingEntry.amount : currentSpending;
+    if (incomeEntry && incomeEntry.type === "expense") incomeEntry.amount = -1 * incomeEntry.amount
+    if (incomeEntry && incomeEntry.type === "income") currentIncome = incomeEntry.recurring ? incomeEntry.amount : currentIncome;
+    if (incomeEntry && incomeEntry.type === "expense") currentSpending = incomeEntry.recurring ? incomeEntry.amount : currentSpending;
 
     income = currentIncome + currentSpending;
-
-    // Update savings and return updated point
-    savings += income;
-    if (incomeEntry && !incomeEntry.recurring) savings += incomeEntry.amount;
-    if (spendingEntry && !spendingEntry.recurring) savings -= spendingEntry.amount;
-    return { x: row.x, y: savings };
+    savings.value[index].y = currentSaving + (income * savingsPercent.value);
+    savingsInterest = savings.value[index].y * savingsInterestPercent
+    income += savingsInterest;
+    // Update assets and return updated point
+    assets += income;
+    currentSaving = currentSaving + (income * savingsPercent.value);
+    if (incomeEntry && !incomeEntry.recurring) assets += incomeEntry.amount;
+    if (assets < savings.value[index].y) {
+      savings.value[index].y = assets
+      currentSaving = assets
+    }
+    return { x: row.x, y: assets };
   });
 }
 
 // Sample data points (initialize if no data)
-if (data.value.length === 0) {
+if (totalAssets.value.length === 0) {
   let i: number = 0;
-  for (i; i < 100; i++) {
-    data.value.push({ x: i, y: 0 });
+  for (i; i < 1000; i++) {
+    totalAssets.value.push({ x: i, y: 0 });
+    savings.value.push({ x: i, y: 0 });
   }
 }
 
-console.log(data.value);
 
 updateData()
 
@@ -219,23 +243,20 @@ const generateTicks = (maxY: number, interval: number): number[] => {
 
   
   // Compute X and Y ticks
-  const xTicks: number[] = Array.from({ length: 101 }, (_, i) => i);
-  const yTicks = computed<number[]>(() => generateTicks(5000,500));
+  const xTicks: number[] =  generateTicks(1000,120);
+  const yTicks = computed<number[]>(() => generateTicks(1000000,50000));
   
-
-  const minX: number = 0;
-  const maxX: number = 100;
 
   // Create scaling functions
   const scaleX = computed<((x: number) => number)>(() => {
-    console.log(minX, maxX)
+    console.log(minX.value, maxX.value)
     return (x: number) =>
-      padding + ((x - minX) / (maxX - minX)) * (chartWidth - 2 * padding);
+      padding + ((x - minX.value) / (maxX.value - minX.value)) * (chartWidth - 2 * padding);
   });
   
   const scaleY = computed<((y: number) => number)>(() => {
     const minY = 0;
-    const maxY = 3000; // Math.max(...data.value.map((d) => d.y));
+    const maxY = 1000000; // Math.max(...data.value.map((d) => d.y));
     return (y: number) =>
       chartHeight -
       padding -
@@ -244,7 +265,7 @@ const generateTicks = (maxY: number, interval: number): number[] => {
   
   // Compute line points for connecting lines
   const linePoints = computed<string>(() =>
-    data.value
+    totalAssets.value
       .map((point) => `${scaleX.value(point.x)},${scaleY.value(point.y)}`)
       .join(" ")
   );

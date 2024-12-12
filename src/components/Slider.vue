@@ -19,9 +19,9 @@ const startDrag = (index: number, event: MouseEvent) => {
   const onMouseMove = (moveEvent: MouseEvent) => {
     if (isDragging) {
       const deltaX = moveEvent.clientX - startX;
-      let newX = startPointX + (deltaX * 100) / 600; // Max value 12, chart width 600
+      let newX = startPointX + (deltaX * 1000) / 600; // Max value 12, chart width 600
       newX = Math.round(newX); // Snap to the nearest whole number
-      pointsStore.updatePoint(index, { x: Math.min(Math.max(0, newX), 100), value: pointsStore.points[index].value, recurring: pointsStore.points[index].recurring});
+      pointsStore.updatePoint(index, { x: Math.min(Math.max(0, newX), 1000), value: pointsStore.points[index].value, recurring: pointsStore.points[index].recurring, type: pointsStore.points[index].type});
     }
   };
 
@@ -39,7 +39,7 @@ const startDrag = (index: number, event: MouseEvent) => {
   // Create scaling functions
   const scaleX = computed<((x: number) => number)>(() => {
     const minX = 0;
-    const maxX = 100;
+    const maxX = 1000;
     return (x: number) =>
       padding + ((x - minX) / (maxX - minX)) * (chartWidth - 2 * padding);
   });
@@ -64,9 +64,14 @@ const startDrag = (index: number, event: MouseEvent) => {
 
         <input
           type="boolean"
-          v-model.number="point.recurring"
+          v-model.boolean="point.recurring"
           style="width: 60px;"
         />
+
+        <select id="store-type" v-model="point.type">
+      <option value="income">Income</option>
+      <option value="expense">Expense</option>
+    </select>
       </label>
     </div>
     <!-- Button to add a point -->
