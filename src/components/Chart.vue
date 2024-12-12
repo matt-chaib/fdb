@@ -115,6 +115,9 @@
   import { defineProps } from 'vue';
 
     import type { PointStore } from '@/stores/pointStore';
+    import { useAxisStore } from '@/stores/xaxis';
+    const axisStore = useAxisStore();
+
 
     let {pointStore} = defineProps<{
       pointStore: PointStore;
@@ -124,7 +127,11 @@
 
     let minX = ref<number>(0);
     let maxX = ref<number>(1000);
+    axisStore.updateAxis(minX.value, maxX.value)
 
+    watch([minX, maxX], ([newMinX, newMaxX]) => {
+  axisStore.updateAxis(newMinX, newMaxX);
+});
 
   console.log(hoveredPoint)
   

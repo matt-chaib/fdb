@@ -5,6 +5,8 @@ import { sliderColors } from '@/utils/colours';
 import { defineProps } from 'vue';
 
 import type { PointStore } from '@/stores/pointStore';
+import { useAxisStore } from '@/stores/xaxis';
+const axisStore = useAxisStore();
 
 let {pointsStore} = defineProps<{
   pointsStore: PointStore;
@@ -38,11 +40,12 @@ const startDrag = (index: number, event: MouseEvent) => {
   let chartWidth = 600
   // Create scaling functions
   const scaleX = computed<((x: number) => number)>(() => {
-    const minX = 0;
-    const maxX = 1000;
+    console.log(axisStore.axis)
     return (x: number) =>
-      padding + ((x - minX) / (maxX - minX)) * (chartWidth - 2 * padding);
+      padding + ((x - axisStore.axis.min) / (axisStore.axis.max - axisStore.axis.min)) * (chartWidth - 2 * padding);
   });
+
+
 
 </script>
 
