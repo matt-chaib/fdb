@@ -52,31 +52,7 @@ const startDrag = (index: number, event: MouseEvent) => {
 <template>
   <div>
       <!-- Display and edit point values -->
-      <div v-for="(point, index) in pointsStore.points" :key="'input-' + index" style="margin-top: 10px;">
-      <label>
-        Point {{ index + 1 }}:
-        X = {{ point.x }},
-        Recurring = {{ point.recurring }}
-        Value: 
-        <input
-          type="number"
-          v-model.number="point.value"
-          :min="0"
-          style="width: 60px;"
-        />
-
-        <input
-          type="boolean"
-          v-model.boolean="point.recurring"
-          style="width: 60px;"
-        />
-
-        <select id="store-type" v-model="point.type">
-      <option value="income">Income</option>
-      <option value="expense">Expense</option>
-    </select>
-      </label>
-    </div>
+     
     <!-- Button to add a point -->
     <button @click="pointsStore.addPoint">Add Point</button>
     
