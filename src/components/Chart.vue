@@ -201,22 +201,26 @@ function updateData() {
   let currentSaving: number = 0;
   let savingsInterest: number = 0;
   let savingsInterestPercent: number = 0.001;
+  totalAssets.value = totalAssets.value.map(row => { return ({x: row.x, y: 0})})
+  savings.value = savings.value.map(row => { return ({x: row.x, y: 0})})
 
   // Update the data array with new values
   totalAssets.value = totalAssets.value.map((row, index) => {
     const incomeEntry = incomeLevel.value.find((level) => level.x === row.x);
-    if (incomeEntry && incomeEntry.type === "expense") incomeEntry.amount = -1 * incomeEntry.amount
     if (incomeEntry && incomeEntry.type === "income") currentIncome = incomeEntry.recurring ? incomeEntry.amount : currentIncome;
     if (incomeEntry && incomeEntry.type === "expense") currentSpending = incomeEntry.recurring ? incomeEntry.amount : currentSpending;
 
-    income = currentIncome + currentSpending;
+    income = currentIncome - currentSpending;
     savings.value[index].y = currentSaving + (income * savingsPercent.value);
     savingsInterest = savings.value[index].y * savingsInterestPercent
     income += savingsInterest;
     // Update assets and return updated point
     assets += income;
     currentSaving = currentSaving + (income * savingsPercent.value);
-    if (incomeEntry && !incomeEntry.recurring) assets += incomeEntry.amount;
+    if (incomeEntry && !incomeEntry.recurring) {
+      assets += incomeEntry.amount;
+      currentSaving += incomeEntry.amount;
+    }
     if (assets < savings.value[index].y) {
       savings.value[index].y = assets
       currentSaving = assets

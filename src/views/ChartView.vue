@@ -3,8 +3,7 @@ import Slider from '@/components/Slider.vue';
 import Chart from '../components/Chart.vue'
 
 import { usePointsStore } from '@/stores/points'; // Import the store
-import FinanceAttributes from '@/components/FinanceAttributes.vue';
-import FinanceSummary from '@/components/FinanceSummary.vue';
+import FinancialAttributes from '@/components/FinancialAttributes.vue';
 const pointStore = usePointsStore(); // Get the store instance
 
 </script>
@@ -12,8 +11,7 @@ const pointStore = usePointsStore(); // Get the store instance
 <template>
   <main>
     <div class="attributes">
-      <FinanceAttributes />
-      <FinanceSummary />
+      <FinancialAttributes />
     </div>
     <div>
       <Slider :pointsStore="pointStore" />
