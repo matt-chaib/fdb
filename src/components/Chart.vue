@@ -277,6 +277,20 @@ const generateTicks = (maxY: number, interval: number): number[] => {
       .join(" ")
   );
 
+  const onehk = computed(() => {
+  const point = totalAssets.value.find(row => row.y > 100000);
+  return point ? point : null; // Return `null` if no match
+});
+
+const threehk = computed(() => {
+  const point = totalAssets.value.find(row => row.y > 300000);
+  return point ? point : null;
+});
+
+const wealth80 = computed(() => {
+  const point = totalAssets.value.find(row => row.x === 12 * 80);
+  return point ? new Intl.NumberFormat('en-US').format(point.y.toFixed(2)) : 0; // Return 0 if no match
+});
   
   </script>
   
