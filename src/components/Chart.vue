@@ -106,6 +106,10 @@
           style="width: 60px;"
         />
     </div>
+    <p>Time to reach 100k: {{ onehk ? (onehk.x / 12) : 0 }} years.</p>
+    <p>Time to reach 300k: {{ threehk ? (threehk.x / 12): 0 }} years.</p>
+    <p>Wealth at 80 years: £{{ wealth80 }}</p>
+
   </template>
   
   <script setup lang="ts">
