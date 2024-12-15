@@ -3,5 +3,6 @@ export interface Point {
     value: number;
     recurring: boolean;
     type: string;
+    name: String;
   }
   

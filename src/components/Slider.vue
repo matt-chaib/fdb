@@ -23,7 +23,7 @@ const startDrag = (index: number, event: MouseEvent) => {
       const deltaX = moveEvent.clientX - startX;
       let newX = startPointX + (deltaX * 1000) / 600; // Max value 12, chart width 600
       newX = Math.round(newX); // Snap to the nearest whole number
-      pointsStore.updatePoint(index, { x: Math.min(Math.max(0, newX), 1000), value: pointsStore.points[index].value, recurring: pointsStore.points[index].recurring, type: pointsStore.points[index].type});
+      pointsStore.updatePoint(index, { x: Math.min(Math.max(0, newX), 1000), value: pointsStore.points[index].value, recurring: pointsStore.points[index].recurring, type: pointsStore.points[index].type, name: pointsStore.points[index].name});
     }
   };
 

@@ -55,7 +55,7 @@
             text-anchor="end"
             font-size="12"
           >
-            {{ tick/1000 + 'k' }}
+            {{ Math.floor(tick/1000) + 'k' }}
           </text>
         </g>
         <polyline
@@ -64,9 +64,21 @@
           stroke="blue"
           stroke-width="2"
         />
+        <polyline
+          :points="freeCashLine"
+          fill="none"
+          stroke="yellow"
+          stroke-width="2"
+        />
+        <polyline
+          :points="savingsLine"
+          fill="none"
+          stroke="navy"
+          stroke-width="2"
+        />
         <!-- Data Points -->
         <circle
-        v-for="(point, i) in totalAssets"
+        v-for="(point, i) in totalAssetsReduced"
   :key="'point-' + i"
   :cx="scaleX(point.x)"
   :cy="scaleY(point.y)"
@@ -75,14 +87,6 @@
   @mouseenter="handleMouseEnter(i)"
   @mouseleave="handleMouseLeave"
         />
-        <circle
-        v-for="(point, i) in savings"
-  :key="'point-' + i"
-  :cx="scaleX(point.x)"
-  :cy="scaleY(point.y)"
-  :r="'3px'" 
-  :fill="'blue'" 
-        />     
       </svg>
     </div>
     <div>
@@ -146,7 +150,7 @@
   }
 
   function handleMouseEnter(index: number) {
-    console.log(index, totalAssets.value[index].y)
+    console.log(totalAssetsReduced.value[index].x/12, totalAssetsReduced.value[index].y)
   hoveredPoint.value = index;
 }
 
@@ -172,7 +176,9 @@ const totalAssets = ref<DataPoint[]>([]);
 
 const savings = ref<DataPoint[]>([]);
 
-const incomeLevel = computed(() => {
+const freeCash = ref<DataPoint[]>([]);
+
+const financialChange = computed(() => {
   return pointStore.points.map(point => ({
     x: point.x,
     amount: point.value,
@@ -183,12 +189,10 @@ const incomeLevel = computed(() => {
 
 // Watch for changes in pointStore to update the graph
 watch(() => pointStore.points, () => {
-  console.log("updating")
   updateData();
 }, { deep: true });
 
 watch(() => savingsPercent, () => {
-  console.log("updating")
   updateData();
 }, { deep: true });
 
@@ -198,6 +202,7 @@ function updateData() {
   let currentIncome: number = 0;
   let currentSpending: number = 0;
   let income: number = 0;
+  let currentFreeCash: number = 0;
   let currentSaving: number = 0;
   let savingsInterest: number = 0;
   let savingsInterestPercent: number = 0.001;
@@ -206,25 +211,44 @@ function updateData() {
 
   // Update the data array with new values
   totalAssets.value = totalAssets.value.map((row, index) => {
-    const incomeEntry = incomeLevel.value.find((level) => level.x === row.x);
-    if (incomeEntry && incomeEntry.type === "income") currentIncome = incomeEntry.recurring ? incomeEntry.amount : currentIncome;
-    if (incomeEntry && incomeEntry.type === "expense") currentSpending = incomeEntry.recurring ? incomeEntry.amount : currentSpending;
+    const financialChanges = financialChange.value.filter((change) => change.x === row.x);
 
-    income = currentIncome - currentSpending;
+    let nonRecurringIncome = 0;
+    let nonRecurringSpend = 0;
+
+    financialChanges.forEach(change => {
+      if (change && change.type === "income")  change.recurring ? currentIncome =  change.amount : nonRecurringIncome = change.amount;
+      if (change && change.type === "expense") change.recurring ? currentSpending =  change.amount : nonRecurringSpend = change.amount;
+    })
     savings.value[index].y = currentSaving + (income * savingsPercent.value);
+
     savingsInterest = savings.value[index].y * savingsInterestPercent
-    income += savingsInterest;
+    savings.value[index].y += savingsInterest
+
     // Update assets and return updated point
+    income = currentIncome - currentSpending;
     assets += income;
+    assets += savingsInterest;
+    assets += nonRecurringIncome;
+    assets -= nonRecurringSpend;
+    currentSaving += nonRecurringIncome
+
     currentSaving = currentSaving + (income * savingsPercent.value);
-    if (incomeEntry && !incomeEntry.recurring) {
-      assets += incomeEntry.amount;
-      currentSaving += incomeEntry.amount;
+    currentFreeCash = currentFreeCash + income - nonRecurringSpend - (income * savingsPercent.value)
+    freeCash.value[index].y = currentFreeCash;
+
+    currentSaving = currentSaving + savingsInterest;
+    if (freeCash.value[index].y <= 0) {
+      savings.value[index].y += freeCash.value[index].y
+      currentSaving = savings.value[index].y
+      currentFreeCash = 0;
     }
-    if (assets < savings.value[index].y) {
-      savings.value[index].y = assets
-      currentSaving = assets
-    }
+    // console.log (
+    //   "freeCash: ", freeCash.value[index].y,
+    //   "savings: ", savings.value[index].y,
+    //   "total assets: ", assets,
+    //   "sum: ", freeCash.value[index].y + savings.value[index].y
+    // )
     return { x: row.x, y: assets };
   });
 }
@@ -235,6 +259,7 @@ if (totalAssets.value.length === 0) {
   for (i; i < 1000; i++) {
     totalAssets.value.push({ x: i, y: 0 });
     savings.value.push({ x: i, y: 0 });
+    freeCash.value.push({ x: i, y: 0 });
   }
 }
 
@@ -242,11 +267,22 @@ if (totalAssets.value.length === 0) {
 updateData()
 
 // Function to generate ticks based on the maximum y value and the interval
-const generateTicks = (maxY: number, interval: number): number[] => {
+const generateTicks = (maxY: number, axis: String): number[] => {
   // Calculate the number of ticks needed based on the interval
   const ticks: number[] = [];
   let currentTick = 0;
+  let interval = 0;
 
+  if (axis === "y"){
+  if (maxY > 250000) interval = 50000
+  if (maxY > 100000 && maxY < 250000) interval = 25000
+  if (maxY < 100000) interval = 5000
+  if (maxY < 25000) interval = 1000
+  }
+ 
+  if (axis === "x") {
+    interval = 120
+  }
   // Generate ticks starting from 0 up to the nearest multiple of interval that's >= maxY
   while (currentTick <= maxY) {
     ticks.push(currentTick);
@@ -258,8 +294,11 @@ const generateTicks = (maxY: number, interval: number): number[] => {
 
   
   // Compute X and Y ticks
-  const xTicks: number[] =  generateTicks(1000,120);
-  const yTicks = computed<number[]>(() => generateTicks(1000000,50000));
+  const xTicks: number[] =  generateTicks(1000, "x");
+  const yTicks = computed<number[]>(() => {
+    console.log("maxX value", (totalAssets.value.find(row => row.x === maxX.value)?.y || 1000000))
+    return generateTicks((totalAssets.value.find(row => row.x === maxX.value)?.y || 1000000), "y")
+  });
   
 
   // Create scaling functions
@@ -270,8 +309,8 @@ const generateTicks = (maxY: number, interval: number): number[] => {
   });
   
   const scaleY = computed<((y: number) => number)>(() => {
-    const minY = 0;
-    const maxY = 1000000; // Math.max(...data.value.map((d) => d.y));
+    const minY = totalAssets.value.find(row => row.x === minX.value)?.y || 0;
+    const maxY = totalAssets.value.find(row => row.x === maxX.value)?.y || 1000000; // Math.max(...data.value.map((d) => d.y));
     return (y: number) =>
       chartHeight -
       padding -
@@ -284,6 +323,28 @@ const generateTicks = (maxY: number, interval: number): number[] => {
       .map((point) => `${scaleX.value(point.x)},${scaleY.value(point.y)}`)
       .join(" ")
   );
+
+  const freeCashLine = computed<string>(() =>
+    freeCash.value
+      .map((point) => `${scaleX.value(point.x)},${scaleY.value(point.y)}`)
+      .join(" ")
+  );
+
+  const savingsLine = computed<string>(() =>
+    savings.value
+      .map((point) => `${scaleX.value(point.x)},${scaleY.value(point.y)}`)
+      .join(" ")
+  );
+
+  const totalAssetsReduced = computed<DataPoint[]>(() => {
+    let reducedOutput: DataPoint[] = [];
+   totalAssets.value.forEach((row, index) => {
+    if (row.x % 12 ===0) {
+      reducedOutput.push(row)
+    }
+   })
+   return reducedOutput
+  })
 
   const onehk = computed(() => {
   const point = totalAssets.value.find(row => row.y > 100000);

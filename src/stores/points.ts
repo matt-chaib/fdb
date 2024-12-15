@@ -3,7 +3,7 @@ import type { Point } from '@/types/Point';
 
 export const usePointsStore = defineStore('points', {
   state: () => ({
-    points: [{x: 4, value: 50, recurring: true, type: "income"}, {x: 7, value: 20, recurring: true, type: "expense"}] as Point[], // The array to store incomes
+    points: [{x: 240, value: 1000, recurring: true, type: "income"}, {x: 264, value: 500, recurring: true, type: "expense"}] as Point[], // The array to store incomes
   }),
   actions: {
     addPoint() {
