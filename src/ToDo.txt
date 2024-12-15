@@ -1,0 +1,6 @@
+- Make points on the graph selectable
+- At the selected time point, a graph appears which is a stacked bar chart showing the breakdown of assets (savings, free cash, investments, house)
+- User can add income value before or after tax/other costs (estimated based on "profile" e.g. did you study?)
+- User should be able to enter mortgage, deposit, interest rate, and if overpayments are made. Chart should figure out when costs drop. 
+- Should some costs be "additive/cumulative" rather than replacing others?
+- Allow "timestamps" to be shown for retirement age, mortgage paid moment etc... 
