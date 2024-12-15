@@ -17,7 +17,7 @@ import { sliderColors } from '@/utils/colours';
           type="String"
           v-model.number="point.name"
           :min="0"
-          :style="{border: `2px solid ${sliderColors[index]}`, width: '100px', padding: '0.2rem'}"
+          :style="{border: `2px solid ${sliderColors[index]}`, width: '150px', padding: '0.2rem'}"
         />
       </label>
 
