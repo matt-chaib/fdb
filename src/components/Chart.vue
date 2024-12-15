@@ -220,13 +220,16 @@ function updateData() {
       if (change && change.type === "income")  change.recurring ? currentIncome =  change.amount : nonRecurringIncome = change.amount;
       if (change && change.type === "expense") change.recurring ? currentSpending =  change.amount : nonRecurringSpend = change.amount;
     })
+
+    // Update assets and return updated point
+    income = currentIncome - currentSpending;
+
     savings.value[index].y = currentSaving + (income * savingsPercent.value);
 
     savingsInterest = savings.value[index].y * savingsInterestPercent
     savings.value[index].y += savingsInterest
 
-    // Update assets and return updated point
-    income = currentIncome - currentSpending;
+
     assets += income;
     assets += savingsInterest;
     assets += nonRecurringIncome;
