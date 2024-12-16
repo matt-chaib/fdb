@@ -4,6 +4,7 @@ import Chart from '../components/Chart.vue'
 
 import { usePointsStore } from '@/stores/points'; // Import the store
 import FinancialAttributes from '@/components/FinancialAttributes.vue';
+import Mortgage from '@/components/Mortgage.vue';
 const pointStore = usePointsStore(); // Get the store instance
 
 </script>
@@ -15,7 +16,10 @@ const pointStore = usePointsStore(); // Get the store instance
     </div>
     <div>
       <Slider :pointsStore="pointStore" />
-      <Chart :pointStore="pointStore"/>
+      <div>
+        <Chart :pointStore="pointStore"/>
+        <Mortgage />
+      </div>
     </div>
   </main>
 </template>
