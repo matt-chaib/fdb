@@ -4,5 +4,7 @@ export interface Point {
     recurring: boolean;
     type: string;
     name: String;
+    id: number;
+    expires_at_x: number;
   }
   

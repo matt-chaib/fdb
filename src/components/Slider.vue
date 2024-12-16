@@ -1,6 +1,7 @@
 <script setup lang="ts">
+
 import { onMounted, computed } from 'vue';
-import { sliderColors } from '@/utils/colours';
+import { sliderColors, hexToRgb } from '@/utils/colours';
 
 import { defineProps } from 'vue';
 
@@ -12,18 +13,24 @@ let {pointsStore} = defineProps<{
   pointsStore: PointStore;
 }>();
 
+const selectPoint = (id: number) => {
+  pointsStore.selectPoint(id); // Update the selected point in the store
+};
+
 // Start dragging the point
-const startDrag = (index: number, event: MouseEvent) => {
+const startDrag = (id: number, event: MouseEvent) => {
   let isDragging = true;
   const startX = event.clientX;
-  const startPointX = pointsStore.points[index].x;
+  const startPointX = pointsStore.findPoint(id).x;
 
   const onMouseMove = (moveEvent: MouseEvent) => {
     if (isDragging) {
+      console.log("Point X", startPointX)
+      console.log("start X", startX)
       const deltaX = moveEvent.clientX - startX;
       let newX = startPointX + (deltaX * 1000) / 600; // Max value 12, chart width 600
       newX = Math.round(newX); // Snap to the nearest whole number
-      pointsStore.updatePoint(index, { x: Math.min(Math.max(0, newX), 1000), value: pointsStore.points[index].value, recurring: pointsStore.points[index].recurring, type: pointsStore.points[index].type, name: pointsStore.points[index].name});
+      pointsStore.updatePointX(id, Math.min(Math.max(0, newX), 1000));
     }
   };
 
@@ -45,7 +52,21 @@ const startDrag = (index: number, event: MouseEvent) => {
       padding + ((x - axisStore.axis.min) / (axisStore.axis.max - axisStore.axis.min)) * (chartWidth - 2 * padding);
   });
 
+  const pointsShown = computed(() => {
+    return pointsStore.points
 
+    if (pointsStore.selectedPointId) {
+      return [pointsStore.findPoint(pointsStore.selectedPointId)]
+    } else {
+      return pointsStore.points
+    }
+});
+
+const getSelectedPoint = computed(() => {
+  return pointsStore.selectedPointId
+    ? pointsStore.findPoint(pointsStore.selectedPointId)
+    : null;
+});
 
 </script>
 
@@ -59,8 +80,8 @@ const startDrag = (index: number, event: MouseEvent) => {
     <!-- Render each point -->
     <div class="line" :style="{ width: '600px', height: '10px', background: '#ddd', position: 'relative' }">
       <div
-        v-for="(point, index) in pointsStore.points"
-        :key="index"
+        v-for="(point, index) in pointsShown"
+        :key="point.id"
         class="point"
         :style="{
           left: `${scaleX(point.x) - 123}px`,
@@ -69,26 +90,58 @@ const startDrag = (index: number, event: MouseEvent) => {
           cursor: 'pointer',
           width: `${point.recurring ? '20px' : '10px'}`,
           height: `${point.recurring ? '20px' : '10px'}`,
-          backgroundColor: sliderColors[index],
+          backgroundColor: pointsStore.selectedPointId === point.id || !pointsStore.selectedPointId
+      ? sliderColors[point.id]
+      : `rgba(${hexToRgb(sliderColors[point.id])}, 0.3)`,
           borderRadius: '50%',
+          border: pointsStore.selectedPointId === point.id ? '2px solid black' : 'none',
+
         }"
-        @mousedown="startDrag(index, $event)"
+        @mousedown="startDrag(point.id, $event)"
+        @click="selectPoint(point.id)"
       ></div>
       <div
-        v-for="(point, index) in pointsStore.points"
-        :key="index"
+        v-for="(point, index) in pointsShown"
+        :key="point.id"
         class="line"
         :style="{
           left: `${scaleX(point.x) - 128}px`,
-          bottom: '-470px',
+          bottom: '-400px',
           position: 'absolute',
           cursor: 'pointer',
           width: '2px',
-          height: '450px',
-          backgroundColor: sliderColors[index],
+          height: '380px',
+          backgroundColor: pointsStore.selectedPointId === point.id || !pointsStore.selectedPointId
+      ? sliderColors[point.id]
+      : `rgba(${hexToRgb(sliderColors[point.id])}, 0.3)`,
         }"
-        @mousedown="startDrag(index, $event)"
+        @mousedown="startDrag(point.id, $event)"
       ></div>
+      <div
+        v-if="getSelectedPoint && getSelectedPoint.expires_at_x"
+        class="shaded-rectangle"
+        :style="{
+          left: `${Math.min(scaleX(getSelectedPoint.x), scaleX(getSelectedPoint.expires_at_x)) - 42}px`,
+          width: `${Math.abs(scaleX(getSelectedPoint.x) - scaleX(getSelectedPoint.expires_at_x)) - 0}px`,
+          top: '30px',
+          position: 'absolute',
+          height: '350px',
+          backgroundColor: 'rgba(100, 149, 237, 0.3)', /* Semi-transparent blue */
+        }"
+      ></div>
+        <!-- Render arrowhead at expires_at_x -->
+        <div
+    v-if="getSelectedPoint && getSelectedPoint.expires_at_x"
+    :style="{
+      position: 'absolute',
+      left: `${scaleX(getSelectedPoint.expires_at_x) - 42}px`, // Adjust for position
+      bottom: '-15px',
+      fontSize: '30px',
+      color: 'black',
+    }"
+  >
+    &#x003C; <!-- Unicode for "<" -->
+  </div>
     </div>
   </div>
 </template>
