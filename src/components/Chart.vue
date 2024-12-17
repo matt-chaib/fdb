@@ -307,16 +307,16 @@ const generateTicks = (maxY: number, axis: String): number[] => {
   const scaleX = computed<((x: number) => number)>(() => {
     console.log(minX.value, maxX.value)
     return (x: number) =>
-      padding + ((x - minX.value) / (maxX.value - minX.value)) * (chartWidth - 2 * padding);
+      chartStore.padding + ((x - minX.value) / (maxX.value - minX.value)) * (chartStore.width - 2 * chartStore.padding);
   });
   
   const scaleY = computed<((y: number) => number)>(() => {
     const minY = totalAssets.value.find(row => row.x === minX.value)?.y || 0;
     const maxY = totalAssets.value.find(row => row.x === maxX.value)?.y || 1000000; // Math.max(...data.value.map((d) => d.y));
     return (y: number) =>
-      chartHeight -
-      padding -
-      ((y - minY) / (maxY - minY)) * (chartHeight - 2 * padding);
+    chartStore.height -
+      chartStore.padding -
+      ((y - minY) / (maxY - minY)) * (chartStore.height - 2 * chartStore.padding);
   });
   
   // Compute line points for connecting lines
@@ -370,7 +370,7 @@ const wealth80 = computed(() => {
     display: flex;
     justify-content: center;
     align-items: center;
-    margin: 20px;
+    margin: 20px 0px;
   }
   </style>
   

@@ -69,6 +69,9 @@ const getSelectedPoint = computed(() => {
     : null;
 });
 
+const pointWidthLarge = 20
+const pointWidthSmall = 10
+
 </script>
 
 <template>
@@ -79,18 +82,18 @@ const getSelectedPoint = computed(() => {
     <button @click="pointsStore.addPoint">Add Point</button>
     
     <!-- Render each point -->
-    <div class="line" :style="{ width: '600px', height: '10px', background: '#ddd', position: 'relative' }">
+    <div class="line" :style="{ width: '600px', height: '10px', background: '#ddd', position: 'relative', marginLeft: `${chartStore.padding}px`}">
       <div
         v-for="(point, index) in pointsShown"
         :key="point.id"
         class="point"
         :style="{
-          left: `${scaleX(point.x) - 123}px`,
+          left: `${scaleX(point.x) - chartStore.padding - pointWidthLarge/2}px`,
           bottom: '-5px',
           position: 'absolute',
           cursor: 'pointer',
-          width: `${point.recurring ? '20px' : '10px'}`,
-          height: `${point.recurring ? '20px' : '10px'}`,
+          width: `${point.recurring ? `'${pointWidthLarge}px'` : `'${pointWidthSmall}px'`}`,
+          height: `${point.recurring ? `'${pointWidthLarge}px'` : `'${pointWidthSmall}px'`}`,
           backgroundColor: pointsStore.selectedPointId === point.id || !pointsStore.selectedPointId
       ? sliderColors[point.id]
       : `rgba(${hexToRgb(sliderColors[point.id])}, 0.3)`,
@@ -106,7 +109,7 @@ const getSelectedPoint = computed(() => {
         :key="point.id"
         class="line"
         :style="{
-          left: `${scaleX(point.x) - 128}px`,
+          left: `${scaleX(point.x) - chartStore.padding}px`,
           bottom: '-400px',
           position: 'absolute',
           cursor: 'pointer',
@@ -122,7 +125,7 @@ const getSelectedPoint = computed(() => {
         v-if="getSelectedPoint && getSelectedPoint.expires_at_x"
         class="shaded-rectangle"
         :style="{
-          left: `${Math.min(scaleX(getSelectedPoint.x), scaleX(getSelectedPoint.expires_at_x)) - 42}px`,
+          left: `${Math.min(scaleX(getSelectedPoint.x), scaleX(getSelectedPoint.expires_at_x)) - chartStore.padding}px`,
           width: `${Math.abs(scaleX(getSelectedPoint.x) - scaleX(getSelectedPoint.expires_at_x)) - 0}px`,
           top: '30px',
           position: 'absolute',
@@ -135,7 +138,7 @@ const getSelectedPoint = computed(() => {
     v-if="getSelectedPoint && getSelectedPoint.expires_at_x"
     :style="{
       position: 'absolute',
-      left: `${scaleX(getSelectedPoint.expires_at_x) - 42}px`, // Adjust for position
+      left: `${scaleX(getSelectedPoint.expires_at_x) - chartStore.padding}px`, // Adjust for position
       bottom: '-15px',
       fontSize: '30px',
       color: 'black',
@@ -151,14 +154,11 @@ const getSelectedPoint = computed(() => {
 .line {
   background-color: #ddd;
   height: 10px;
-  margin: 20px 0;
-  margin-left: 85px;
 }
 
 .point {
   width: 20px;
   height: 20px;
-  margin-left: 70px;
   background-color: red;
   border-radius: 50%;
   cursor: pointer;
