@@ -2,38 +2,38 @@
     <div id="chart-container">
       <!-- Chart SVG -->
       <svg
-        :width="chartWidth"
-        :height="chartHeight"
+        :width="chartStore.width"
+        :height="chartStore.height"
         style="border: 1px solid #ddd;"
       >
         <!-- X Axis Line -->
         <line
           x1="0"
-          :y1="chartHeight - padding"
-          :x2="chartWidth"
-          :y2="chartHeight - padding"
+          :y1="chartStore.height - chartStore.padding"
+          :x2="chartStore.width"
+          :y2="chartStore.height - chartStore.padding"
           stroke="black"
         />
         <!-- Y Axis Line -->
         <line
-          :x1="padding"
+          :x1="chartStore.padding"
           y1="0"
-          :x2="padding"
-          :y2="chartHeight"
+          :x2="chartStore.padding"
+          :y2="chartStore.height"
           stroke="black"
         />
         <!-- X Axis Ticks -->
         <g v-for="(tick, i) in xTicks" :key="'x-tick-' + i">
           <line
             :x1="scaleX(tick)"
-            :y1="chartHeight - padding"
+            :y1="chartStore.height - chartStore.padding"
             :x2="scaleX(tick)"
-            :y2="chartHeight - padding + 10"
+            :y2="chartStore.height - chartStore.padding + 10"
             stroke="black"
           />
           <text
             :x="scaleX(tick)"
-            :y="chartHeight - padding + 20"
+            :y="chartStore.height - chartStore.padding + 20"
             text-anchor="middle"
             font-size="12"
           >
@@ -43,14 +43,14 @@
         <!-- Y Axis Ticks -->
         <g v-for="(tick, i) in yTicks" :key="'y-tick-' + i">
           <line
-            :x1="padding"
+            :x1="chartStore.padding"
             :y1="scaleY(tick)"
-            :x2="padding - 10"
+            :x2="chartStore.padding - 10"
             :y2="scaleY(tick)"
             stroke="black"
           />
           <text
-            :x="padding - 15"
+            :x="chartStore.padding - 15"
             :y="scaleY(tick) + 5"
             text-anchor="end"
             font-size="12"
@@ -167,9 +167,8 @@ function handleMouseLeave() {
 }
   
   // Chart dimensions and padding
-  const chartWidth = 600;
-  const chartHeight = 400;
-  const padding = 50;
+  import { useChartStore } from "@/stores/chartDimensions";
+  const chartStore = useChartStore();
   
 // Sample data points
 const totalAssets = ref<DataPoint[]>([]);

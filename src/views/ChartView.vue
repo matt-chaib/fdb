@@ -6,7 +6,8 @@ import { usePointsStore } from '@/stores/points'; // Import the store
 import FinancialAttributes from '@/components/FinancialAttributes.vue';
 import Mortgage from '@/components/Mortgage.vue';
 const pointStore = usePointsStore(); // Get the store instance
-
+import { useChartStore } from '@/stores/chartDimensions';
+const chartStore = useChartStore();
 </script>
 
 <template>
@@ -16,7 +17,7 @@ const pointStore = usePointsStore(); // Get the store instance
     </div>
     <div>
       <Slider :pointsStore="pointStore" />
-      <div>
+      <div :style="{width: chartStore.parentWidth + 'px'}">
         <Chart :pointStore="pointStore"/>
         <Mortgage />
       </div>
@@ -32,5 +33,9 @@ main {
 
 .attributes {
   min-width: 300px;
+}
+
+.test {
+  background-color: blue;
 }
 </style>

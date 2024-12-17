@@ -7,7 +7,9 @@ import { defineProps } from 'vue';
 
 import type { PointStore } from '@/stores/pointStore';
 import { useAxisStore } from '@/stores/xaxis';
+import { useChartStore } from '@/stores/chartDimensions';
 const axisStore = useAxisStore();
+const chartStore = useChartStore();
 
 let {pointsStore} = defineProps<{
   pointsStore: PointStore;
@@ -43,13 +45,12 @@ const startDrag = (id: number, event: MouseEvent) => {
   window.addEventListener('mousemove', onMouseMove);
   window.addEventListener('mouseup', onMouseUp);
 };
-  let padding = 50
-  let chartWidth = 600
+ 
   // Create scaling functions
   const scaleX = computed<((x: number) => number)>(() => {
     console.log(axisStore.axis)
     return (x: number) =>
-      padding + ((x - axisStore.axis.min) / (axisStore.axis.max - axisStore.axis.min)) * (chartWidth - 2 * padding);
+      chartStore.padding + ((x - axisStore.axis.min) / (axisStore.axis.max - axisStore.axis.min)) * (chartStore.width - 2 * chartStore.padding);
   });
 
   const pointsShown = computed(() => {
