@@ -5,25 +5,22 @@ import { sliderColors, hexToRgb } from '@/utils/colours';
 
 import { defineProps } from 'vue';
 
-import type { PointStore } from '@/stores/pointStore';
 import { useAxisStore } from '@/stores/xaxis';
 import { useChartStore } from '@/stores/chartDimensions';
+import { useAttributesStore } from '@/stores/attributeStore';
 const axisStore = useAxisStore();
 const chartStore = useChartStore();
+const attributeStore = useAttributesStore();
 
-let {pointsStore} = defineProps<{
-  pointsStore: PointStore;
-}>();
-
-const selectPoint = (id: number) => {
-  pointsStore.selectPoint(id); // Update the selected point in the store
+const selectAttribute = (id: number) => {
+  attributeStore.selectAttribute(id); // Update the selected attribute in the store
 };
 
-// Start dragging the point
+// Start dragging the attribute
 const startDrag = (id: number, event: MouseEvent) => {
   let isDragging = true;
   const startX = event.clientX;
-  const startPointX = pointsStore.findPoint(id).x;
+  const startPointX = attributeStore.findAttribute(id).x;
 
   const onMouseMove = (moveEvent: MouseEvent) => {
     if (isDragging) {
@@ -32,7 +29,7 @@ const startDrag = (id: number, event: MouseEvent) => {
       const deltaX = moveEvent.clientX - startX;
       let newX = startPointX + (deltaX * 1000) / 600; // Max value 12, chart width 600
       newX = Math.round(newX); // Snap to the nearest whole number
-      pointsStore.updatePointX(id, Math.min(Math.max(0, newX), 1000));
+      attributeStore.updateAttributeX(id, Math.min(Math.max(0, newX), 1000));
     }
   };
 
@@ -53,19 +50,19 @@ const startDrag = (id: number, event: MouseEvent) => {
       chartStore.padding + ((x - axisStore.axis.min) / (axisStore.axis.max - axisStore.axis.min)) * (chartStore.width - 2 * chartStore.padding);
   });
 
-  const pointsShown = computed(() => {
-    return pointsStore.points
+  const attributesShown = computed(() => {
+    return attributeStore.attributes
 
-    if (pointsStore.selectedPointId) {
-      return [pointsStore.findPoint(pointsStore.selectedPointId)]
+    if (attributeStore.selectedAttributeId) {
+      return [attributeStore.findAttribute(attributeStore.selectedAttributeId)]
     } else {
-      return pointsStore.points
+      return attributeStore.attributes
     }
 });
 
-const getSelectedPoint = computed(() => {
-  return pointsStore.selectedPointId
-    ? pointsStore.findPoint(pointsStore.selectedPointId)
+const getSelectedAttribute = computed(() => {
+  return attributeStore.selectedAttributeId
+    ? attributeStore.findAttribute(attributeStore.selectedAttributeId)
     : null;
 });
 
@@ -79,12 +76,12 @@ const pointWidthSmall = 10
       <!-- Display and edit point values -->
      
     <!-- Button to add a point -->
-    <button @click="pointsStore.addPoint">Add Point</button>
+    <button @click="attributeStore.addAttribute">Add Point</button>
     
     <!-- Render each point -->
     <div class="line" :style="{ width: '600px', height: '10px', background: '#ddd', position: 'relative', marginLeft: `${chartStore.padding}px`}">
       <div
-        v-for="(point, index) in pointsShown"
+        v-for="(point, index) in attributesShown"
         :key="point.id"
         class="point"
         :style="{
@@ -94,18 +91,18 @@ const pointWidthSmall = 10
           cursor: 'pointer',
           width: `${point.recurring ? `'${pointWidthLarge}px'` : `'${pointWidthSmall}px'`}`,
           height: `${point.recurring ? `'${pointWidthLarge}px'` : `'${pointWidthSmall}px'`}`,
-          backgroundColor: pointsStore.selectedPointId === point.id || !pointsStore.selectedPointId
+          backgroundColor: attributeStore.selectedAttributeId === point.id || !attributeStore.selectedAttributeId
       ? sliderColors[point.id]
       : `rgba(${hexToRgb(sliderColors[point.id])}, 0.3)`,
           borderRadius: '50%',
-          border: pointsStore.selectedPointId === point.id ? '2px solid black' : 'none',
+          border: attributeStore.selectedAttributeId === point.id ? '2px solid black' : 'none',
 
         }"
         @mousedown="startDrag(point.id, $event)"
-        @click="selectPoint(point.id)"
+        @click="selectAttribute(point.id)"
       ></div>
       <div
-        v-for="(point, index) in pointsShown"
+        v-for="(point, index) in attributesShown"
         :key="point.id"
         class="line"
         :style="{
@@ -115,18 +112,18 @@ const pointWidthSmall = 10
           cursor: 'pointer',
           width: '2px',
           height: '380px',
-          backgroundColor: pointsStore.selectedPointId === point.id || !pointsStore.selectedPointId
+          backgroundColor: attributeStore.selectedAttributeId === point.id || !attributeStore.selectedAttributeId
       ? sliderColors[point.id]
       : `rgba(${hexToRgb(sliderColors[point.id])}, 0.3)`,
         }"
         @mousedown="startDrag(point.id, $event)"
       ></div>
       <div
-        v-if="getSelectedPoint && getSelectedPoint.expires_at_x"
+        v-if="getSelectedAttribute && getSelectedAttribute.expires_at_x"
         class="shaded-rectangle"
         :style="{
-          left: `${Math.min(scaleX(getSelectedPoint.x), scaleX(getSelectedPoint.expires_at_x)) - chartStore.padding}px`,
-          width: `${Math.abs(scaleX(getSelectedPoint.x) - scaleX(getSelectedPoint.expires_at_x)) - 0}px`,
+          left: `${Math.min(scaleX(getSelectedAttribute.x), scaleX(getSelectedAttribute.expires_at_x)) - chartStore.padding}px`,
+          width: `${Math.abs(scaleX(getSelectedAttribute.x) - scaleX(getSelectedAttribute.expires_at_x)) - 0}px`,
           top: '30px',
           position: 'absolute',
           height: '350px',
@@ -135,10 +132,10 @@ const pointWidthSmall = 10
       ></div>
         <!-- Render arrowhead at expires_at_x -->
         <div
-    v-if="getSelectedPoint && getSelectedPoint.expires_at_x"
+    v-if="getSelectedAttribute && getSelectedAttribute.expires_at_x"
     :style="{
       position: 'absolute',
-      left: `${scaleX(getSelectedPoint.expires_at_x) - chartStore.padding}px`, // Adjust for position
+      left: `${scaleX(getSelectedAttribute.expires_at_x) - chartStore.padding}px`, // Adjust for position
       bottom: '-15px',
       fontSize: '30px',
       color: 'black',

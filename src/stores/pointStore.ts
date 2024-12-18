@@ -1,4 +1,4 @@
-import type { Point } from '@/types/Point';
+import type { Point } from '@/types/Attribute';
 
 export interface PointStore {
   points: Point[];

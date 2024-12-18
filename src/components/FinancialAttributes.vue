@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { usePointsStore } from '@/stores/points';
+import { usePointsStore } from '@/stores/attributeStore';
 let pointsStore = usePointsStore()
 const convert_months_to_years = (months: number) => {
   let years = Math.floor(months / 12)

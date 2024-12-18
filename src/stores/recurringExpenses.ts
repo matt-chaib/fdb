@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia';
-import type { Point } from '@/types/Point';
+import type { Point } from '@/types/Attribute';
 
 export const useExpensesStore = defineStore('expenses', {
   state: () => ({

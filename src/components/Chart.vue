@@ -122,19 +122,17 @@
 
   import { defineProps } from 'vue';
 
-    import type { PointStore } from '@/stores/pointStore';
+    import { useAttributesStore } from "@/stores/attributeStore";
     import { useAxisStore } from '@/stores/xaxis';
     const axisStore = useAxisStore();
+    const attributeStore = useAttributesStore();
 
-
-    let {pointStore} = defineProps<{
-      pointStore: PointStore;
-    }>();
-
+    
     let savingsPercent = ref<number>(0.2);
 
     let minX = ref<number>(0);
     let maxX = ref<number>(1000);
+    attributeStore.initialiseTracks(minX.value, maxX.value);
     axisStore.updateAxis(minX.value, maxX.value)
 
     watch([minX, maxX], ([newMinX, newMaxX]) => {
@@ -178,7 +176,7 @@ const savings = ref<DataPoint[]>([]);
 const freeCash = ref<DataPoint[]>([]);
 
 const financialChange = computed(() => {
-  return pointStore.points.map(point => ({
+  return attributeStore.attributes.map(point => ({
     x: point.x,
     amount: point.value,
     recurring: point.recurring,
@@ -186,8 +184,8 @@ const financialChange = computed(() => {
   }));
 });
 
-// Watch for changes in pointStore to update the graph
-watch(() => pointStore.points, () => {
+// Watch for changes in attributeStore to update the graph
+watch(() => attributeStore.attributes, () => {
   updateData();
 }, { deep: true });
 
@@ -210,20 +208,19 @@ function updateData() {
 
   // Update the data array with new values
   totalAssets.value = totalAssets.value.map((row, index) => {
-    const financialChanges = financialChange.value.filter((change) => change.x === row.x);
 
-    let nonRecurringIncome = 0;
-    let nonRecurringSpend = 0;
-
-    financialChanges.forEach(change => {
-      if (change && change.type === "income")  change.recurring ? currentIncome =  change.amount : nonRecurringIncome = change.amount;
-      if (change && change.type === "expense") change.recurring ? currentSpending =  change.amount : nonRecurringSpend = change.amount;
+    let nonRecurringIncome = 0
+    attributeStore.attributes.forEach(attribute => {
+      if (attribute.recurring) {
+        income += attributeStore.attributeTracks[attribute.id][index]
+      } else {
+        nonRecurringIncome += attributeStore.attributeTracks[attribute.id][index]
+      }
     })
 
-    // Update assets and return updated point
-    income = currentIncome - currentSpending;
-
-    savings.value[index].y = currentSaving + (income * savingsPercent.value);
+    if (income > 0) { // could set a manual lower limit where savings aren't paid into
+      savings.value[index].y = currentSaving + (income * savingsPercent.value);
+    }
 
     savingsInterest = savings.value[index].y * savingsInterestPercent
     savings.value[index].y += savingsInterest
@@ -232,8 +229,9 @@ function updateData() {
     assets += income;
     assets += savingsInterest;
     assets += nonRecurringIncome;
-    assets -= nonRecurringSpend;
-    currentSaving += nonRecurringIncome
+    if (nonRecurringIncome > 0) {
+      currentSaving += nonRecurringIncome
+    }
 
     currentSaving = currentSaving + (income * savingsPercent.value);
     currentFreeCash = currentFreeCash + income - nonRecurringSpend - (income * savingsPercent.value)
